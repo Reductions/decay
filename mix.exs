@@ -7,6 +7,7 @@ defmodule Decay.Mixfile do
      elixir: "~> 1.4",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
+     escript: [main_module: Decay],
      deps: deps()]
   end
 
@@ -28,6 +29,8 @@ defmodule Decay.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    []
+    [
+      {:imagineer, "~> 0.2.1"}
+    ]
   end
 end

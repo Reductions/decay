@@ -1,18 +1,5 @@
 defmodule Decay do
-  @moduledoc """
-  Documentation for Decay.
-  """
-
-  @doc """
-  Hello world.
-
-  ## Examples
-
-      iex> Decay.hello
-      :world
-
-  """
-  def hello do
-    :world
+  def main(args)do
+    IO.puts "Hahaha"
   end
 end

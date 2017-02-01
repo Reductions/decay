@@ -3,6 +3,6 @@ defmodule DecayTest do
   doctest Decay
 
   test "the truth" do
-    assert 1 + 1 == 2
+    assert Decay.sss
   end
 end

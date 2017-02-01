@@ -1,0 +1,2 @@
+%{"apex": {:hex, :apex, "0.3.7", "0e4b39ff34d740da9898e368995fdaab2fe4d2a444a6bbe23ccffb3c6978b92c", [:mix], []},
+  "imagineer": {:hex, :imagineer, "0.2.1", "b426707d1c8326cab81ce4d3f5e029283776a7b806db9dbc51306eb2e1451aa6", [:mix], [{:apex, "~>0.3.2", [hex: :apex, optional: false]}]}}
