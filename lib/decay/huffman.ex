@@ -1,33 +1,76 @@
 defmodule Decay.Huffman do
-  def encode(pixels, %{c1: 0, c2: 0, c3: 0}) do
-    tree =
-    count_single(pixels, counter_init)
-    |> Map.to_list
-    |> Enum.sort(&(elem(&1,1) < elem(&2,1)))
-    |> create_tree
-
-    serialized_tree = serialize_tree(tree)
-    encoding_map = map_from_tree(tree)
+  def encode(pixels, reduction) do
+    { list, remapping } =
+      count(pixels, counter_init())
+      |> Map.to_list
+      |> Enum.sort(&(elem(&1,1) < elem(&2,1)))
+      |> reduce(div((256 * (reduction - 1)),reduction))
+    tree = create_tree(list)
+    IO.inspect tree
+    <<serialize_tree(tree)::bitstring,
+      serialize_content(pixels, map_from_tree(tree), remapping)::bitstring>>
   end
 
-  def encode(pixels, %{c1: c1, c2: c2, c3: c3}) do
-    # TODO
+  def decode(binary) do
+    {tree, rest} = decode_tree(binary)
+    decode_pixels(rest, tree)
   end
-
   # private functions
 
-  defp count_single([], counter), do: counter
-  defp count_single([[] | tail], counter), do: count_single(tail, counter)
-  defp count_single([[to_count | rest] | tail], counter) do
-    count_single([rest | tail], %{counter | to_count => counter[to_count]+1})
-  end
-
-  defp count_multi() do
-  end
+  defp mod(x) when x < 0, do: -x
+  defp mod(x), do: x
 
   defp counter_init() do
     Enum.into((for i <- (0..255), do: {i, 0}), Map.new)
   end
+
+  defp mappint_init() do
+    Enum.into((for i <- (0..255), do: {i, i}), Map.new)
+  end
+
+  defp count([], counter), do: counter
+  defp count([pixel | tail], counter) do
+    count(tail, %{counter | pixel => counter[pixel]+1})
+  end
+
+  defp reduce(list, reduction), do: do_reduce(list, mappint_init(), reduction)
+
+  defp do_reduce([{_, 0}|tail], mapping, 0), do: do_reduce(tail, mapping, 0)
+  defp do_reduce([{_, 0}|tail], mapping, n), do: do_reduce(tail, mapping, n - 1)
+  defp do_reduce(list, mapping, 0), do: {list, mapping}
+  defp do_reduce([{value, count}|tail], mapping, n) do
+    {new_value, list} = squash({value, count}, tail)
+    do_reduce(list, %{mapping | value => new_value}, n - 1)
+  end
+
+  defp squash({value, count}, list) do
+    new_value = find(value, list)
+    {new_value, insert_in(count, new_value, list)}
+  end
+
+  defp find(value, list, diff \\257, new_value \\ -1)
+  defp find(_, [], _, new_value), do: new_value
+  defp find(value, [{test_value, _} | tail], diff, new_value) do
+    test_diff = mod(value - test_value)
+    if test_diff > diff do
+      find(value, tail, diff, new_value)
+    else
+      find(value, tail, test_diff, test_value)
+    end
+  end
+
+  defp insert_in(add_count, value, [{value, count}|tail]) do
+    bubble_up({value, count + add_count}, tail)
+  end
+  defp insert_in(add_count, value, [head | tail]) do
+    [head | insert_in(add_count, value, tail)]
+  end
+
+  defp bubble_up(head, []), do: [head]
+  defp bubble_up({value, count}, [{head_v, head_c} | tail]) when count > head_c do
+    [{head_v, head_c} | bubble_up({value, count}, tail)]
+  end
+  defp bubble_up(head, list), do: [head | list]
 
   defp create_tree([{tree, _}]), do: tree
   defp create_tree([first, second | rest]) do
@@ -41,25 +84,62 @@ defmodule Decay.Huffman do
   end
 
   defp place_in(tree, []), do: [tree]
-  defp place_in(tree, [front | rest]) when tree_size(tree) > tree_size(front) do
-    [front | place_in(tree, rest)]
+  defp place_in(tree, [front | rest]) do
+    if tree_size(tree) > tree_size(front) do
+      [front | place_in(tree, rest)]
+    else
+      [tree , front | rest]
+    end
   end
-  defp place_in(tree, forest), do: [tree | forest]
 
   defp tree_size({_, size}), do: size
 
   defp serialize_tree({left, right}) do
-     <<0::size(1)>> <> do_serialize_tree(left) <> do_serialize_tree(right)
+    <<0::size(1), serialize_tree(left)::bitstring,
+      serialize_tree(right)::bitstring>>
   end
   defp serialize_tree(leaf) do
-    <<1::size(1)>> <> <<leaf::size(8)>>
+    <<1::size(1), leaf::size(8)>>
   end
 
-  defp map_from_tree(tree), do: do_map_from_tree(tree, <<>>)
-
-  defp do_map_from_tree({left, right}, binary) do
-    Map.merge(do_map_from_tree(left, binary <> <<0::size(1)>>),
-      do_map_from_tree(right, binary <> <<0::size(1)>>))
+  defp map_from_tree(tree, binary \\ <<>>)
+  defp map_from_tree({left, right}, binary) do
+    Map.merge(map_from_tree(left, <<binary::bitstring, 0::size(1)>>),
+      map_from_tree(right, <<binary::bitstring, 1::size(1)>>))
   end
-  defp do_map_from_tree(leaf, binary), do: %{leaf => binary}
+  defp map_from_tree(leaf, binary), do: %{leaf => binary}
+
+  defp serialize_content(pixels, encode_map, pixel_remaping, encoding \\ <<>>)
+  defp serialize_content([], _, _, encoding), do: encoding
+  defp serialize_content([pixel | rest], encode_map, pixel_remaping, encoding) do
+    serialize_content(rest, encode_map, pixel_remaping,
+      <<encoding::bitstring, encode_map[find_remaping(pixel, pixel_remaping)]::bitstring>>)
+  end
+
+  defp find_remaping(pixel, pixel_remaping) do
+    if pixel_remaping[pixel] == pixel do
+      pixel
+    else
+      find_remaping(pixel_remaping[pixel], pixel_remaping)
+    end
+  end
+
+  defp decode_tree(code)
+  defp decode_tree(<<1::size(1), pixel::size(8), rest::bitstring>>), do: {pixel, rest}
+  defp decode_tree(<<0::size(1), rest::bitstring>>) do
+    {left, rest} = decode_tree(rest)
+    {right, rest} = decode_tree(rest)
+    {{left, right}, rest}
+  end
+
+  defp decode_pixels(code, tree, pixels \\ [])
+  defp decode_pixels(<<>>, _, pixels), do: Enum.reverse pixels
+  defp decode_pixels(code, tree, pixels) do
+    {pixel, rest} = find_pixel(code, tree)
+    decode_pixels(rest, tree, [pixel | pixels])
+  end
+
+  defp find_pixel(<<0::size(1), rest::bitstring>>, {left, _}), do: find_pixel(rest, left)
+  defp find_pixel(<<1::size(1), rest::bitstring>>, {_, right}), do: find_pixel(rest, right)
+  defp find_pixel(code, pixel), do: {pixel, code}
 end
