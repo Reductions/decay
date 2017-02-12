@@ -141,13 +141,17 @@ defmodule Decay.Huffman do
   end
 
   defp decode_pixels(code, tree, pixels \\ [])
-  defp decode_pixels(<<>>, _, pixels), do: Enum.reverse pixels
+  defp decode_pixels(<<>>, _, pixels), do: pixels |> trim |> Enum.reverse
   defp decode_pixels(code, tree, pixels) do
     {pixel, rest} = find_pixel(code, tree)
     decode_pixels(rest, tree, [pixel | pixels])
   end
 
+  defp find_pixel(<<>>, _), do: {nil, <<>>}
   defp find_pixel(<<0::size(1), rest::bitstring>>, {left, _}), do: find_pixel(rest, left)
   defp find_pixel(<<1::size(1), rest::bitstring>>, {_, right}), do: find_pixel(rest, right)
   defp find_pixel(code, pixel), do: {pixel, code}
+
+  defp trim([nil|rest]), do: trim(rest)
+  defp trim(x), do: x
 end

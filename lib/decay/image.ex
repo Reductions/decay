@@ -19,10 +19,45 @@ defmodule Decay.Image do
       e3::binary>>
   end
 
+  def decode_image(file_name) do
+    {:ok, file} = File.open(file_name, [:read])
+
+    {enc, space, wight, height, bin} =
+      IO.binread(file, :all)
+      |> extract_header
+
+    File.close(file)
+    pixels =
+      bin
+      |> split_bins
+      |> decode_format(enc)
+      |> Enum.zip
+      |> detransform(space)
+      |> Enum.map(fn({r, g, b}) -> <<r::size(8), g::size(8), b::size(8)>> end)
+      |> Enum.chunk(wight)
+    {wight, height, pixels}
+  end
+
   def write_image(bin, file_name) do
     {:ok, file} = File.open(file_name, [:write])
     IO.binwrite(file, bin)
     File.close(file)
+  end
+
+  defp split_bins(bin) do
+    <<size1::size(32),
+      size2::size(32),
+      size3::size(32),
+      rest::binary>> = bin
+    {binary_part(rest, 0, size1),
+     binary_part(rest, size1, size2),
+     binary_part(rest, size1 + size2, size3)}
+  end
+
+  defp decode_format({bin1, bin2, bin3}, 'H') do
+    [Huffman.decode(bin1),
+     Huffman.decode(bin2),
+     Huffman.decode(bin3)]
   end
 
   defp split_channels(pixels) do
@@ -37,8 +72,26 @@ defmodule Decay.Image do
   defp transform(pixels, :ycc) do
     Enum.map(pixels, fn({r, g, b}) ->
       { trunc(0.299*r + 0.587*g + 0.114*b),
-        trunc(128 - 0.168736*r - 0.331264*g + 0.5*b),
-        trunc(128 + 0.5*r - 0.418688*g - 0.081312*b)
+        trunc(128 - 0.16874*r - 0.33126*g + 0.5*b),
+        trunc(128 + 0.5*r - 0.41869*g - 0.08131*b)
       } end)
+  end
+
+  defp detransform(pixels, 'R'), do: pixels
+  defp detransform(pixels, 'Y') do
+    Enum.map(pixels, fn({y, cb, cr}) ->
+      { trunc(y + 1.402*(cr - 128)),
+        trunc(y - 0.344136*(cb - 128) - 0.714136*(cr - 128)),
+        trunc(y + 1.772*(cb - 128))
+      } end)
+  end
+
+  defp extract_header(
+    <<"xxDCYxx",
+    encoding::size(8), _::size(8), _::size(8), "xx",
+    color_space::size(8), _::size(8), _::size(8), "xx",
+    wight::size(16), height::size(16), rest::binary>>
+  ) do
+    {[encoding], [color_space], wight, height, rest}
   end
 end

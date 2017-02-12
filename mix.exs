@@ -30,6 +30,7 @@ defmodule Decay.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
+      {:png, "~> 0.1.1"},
       {:imagineer, "~> 0.2.1"}
     ]
   end
