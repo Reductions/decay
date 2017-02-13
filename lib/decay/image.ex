@@ -1,15 +1,13 @@
 defmodule Decay.Image do
   alias Decay.Huffman
 
-  def encode_image(pixels, {r1, r2, r3}, :huf, space) do
-    {c1, c2, c3} =
+  def encode_image(pixels, reduction, format, space) do
+    {e1, e2, e3} =
       pixels
       |> List.flatten
       |> transform(space)
       |> split_channels
-    e1 = Huffman.encode(c1, r1)
-    e2 = Huffman.encode(c2, r2)
-    e3 = Huffman.encode(c3, r3)
+      |> encode_format(format, reduction)
 
     <<byte_size(e1)::size(32),
       byte_size(e2)::size(32),
@@ -42,6 +40,17 @@ defmodule Decay.Image do
     {:ok, file} = File.open(file_name, [:write])
     IO.binwrite(file, bin)
     File.close(file)
+  end
+
+  defp encode_format({c1, c2, c3}, :huf, {r1, r2, r3}) do
+    {Huffman.encode(c1, r1),
+     Huffman.encode(c2, r2),
+     Huffman.encode(c3, r3)}
+  end
+  defp encode_format({c1, c2, c3}, :lzw, {r1, r2, r3}) do
+    {Huffman.encode(c1, r1),
+     Huffman.encode(c2, r2),
+     Huffman.encode(c3, r3)}
   end
 
   defp split_bins(bin) do
