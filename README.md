@@ -50,3 +50,7 @@ There are 2 main ways to use this tool.
 - **--in**=**FILE_NAME**
 
    **FILE_NAME** should be the name of the file to be decoded. It should end with extension .png
+
+##License
+
+The images uploaded in [test_set](/test_set) folder are public domain can be found [here](http://homepages.cae.wisc.edu/~ece533/images/).

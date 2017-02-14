@@ -23,6 +23,4 @@ erl_crash.dump
 /decay
 
 # Ignore images
-*.png
-*.dcy
 /reports
