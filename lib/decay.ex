@@ -53,7 +53,7 @@ defmodule Decay do
   defp process(%{compress: true, huffman: true, rgb: true, reduction: <<c1, c2, c3>>, in: file_name}) do
     {width, height, pixels} = Png.get_image_info(file_name)
     pixels
-    |> Image.encode_image({c1 - 48, c2 - 48, c3 - 48}, :huf, :rgb)
+    |> Image.encode_image({( c1 - 48 )*2 + 1, ( c2 - 48 )*2 + 1, ( c3 - 48 )*2 + 1}, :huf, :rgb)
     |> add_header(<<"xxDCYxxHUFxxRGBxx", width::size(16), height::size(16)>>)
     |> Image.write_image(String.replace_suffix(file_name, ".png", "-HUF-RGB-#{<<c1,c2,c3>>}.dcy"))
   end
@@ -61,7 +61,7 @@ defmodule Decay do
   defp process(%{compress: true, huffman: true, ycc: true, reduction: <<c1, c2, c3>>, in: file_name}) do
     {width, height, pixels} = Png.get_image_info(file_name)
     pixels
-    |> Image.encode_image({c1 - 48, c2 - 48, c3 - 48}, :huf, :ycc)
+    |> Image.encode_image({( c1 - 48 )*2 + 1, ( c2 - 48 )*2 + 1, ( c3 - 48 )*2 + 1}, :huf, :ycc)
     |> add_header(<<"xxDCYxxHUFxxYCCxx", width::size(16), height::size(16)>>)
     |> Image.write_image(String.replace_suffix(file_name, ".png", "-HUF-YCC-#{<<c1,c2,c3>>}.dcy"))
   end
@@ -69,7 +69,7 @@ defmodule Decay do
   defp process(%{compress: true, lzw: true, rgb: true, reduction: <<c1, c2, c3>>, in: file_name}) do
     {width, height, pixels} = Png.get_image_info(file_name)
     pixels
-    |> Image.encode_image({c1 - 48, c2 - 48, c3 - 48}, :lzw, :rgb)
+    |> Image.encode_image({( c1 - 48 )*2 + 1, ( c2 - 48 )*2 + 1, ( c3 - 48 )*2 + 1}, :lzw, :rgb)
     |> add_header(<<"xxDCYxxLZWxxRGBxx", width::size(16), height::size(16)>>)
     |> Image.write_image(String.replace_suffix(file_name, ".png", "-LZW-RGB-#{<<c1,c2,c3>>}.dcy"))
   end
@@ -77,7 +77,7 @@ defmodule Decay do
   defp process(%{compress: true, lzw: true, ycc: true, reduction: <<c1, c2, c3>>, in: file_name}) do
     {width, height, pixels} = Png.get_image_info(file_name)
     pixels
-    |> Image.encode_image({c1 - 48, c2 - 48, c3 - 48}, :lzw, :ycc)
+    |> Image.encode_image({( c1 - 48 )*2 + 1, ( c2 - 48 )*2 + 1, ( c3 - 48 )*2 + 1}, :lzw, :ycc)
     |> add_header(<<"xxDCYxxLZWxxYCCxx", width::size(16), height::size(16)>>)
     |> Image.write_image(String.replace_suffix(file_name, ".png", "-LZW-YCC-#{<<c1,c2,c3>>}.dcy"))
   end

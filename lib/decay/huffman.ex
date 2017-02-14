@@ -4,7 +4,6 @@ defmodule Decay.Huffman do
       count(pixels, counter_init())
       |> Map.to_list
       |> Enum.sort(&(elem(&1,1) < elem(&2,1)))
-      |> clear
       |> reduce(reduction)
     tree = create_tree(list)
     <<serialize_tree(tree)::bitstring,
@@ -16,7 +15,9 @@ defmodule Decay.Huffman do
     {tree, rest} = decode_tree(binary)
     decode_pixels(rest, tree)
   end
+
   # private functions
+
   defp norm(x) when is_binary(x), do: x
   defp norm(x), do: norm(<<x::bitstring, 0::size(1)>>)
 
@@ -37,14 +38,12 @@ defmodule Decay.Huffman do
     count(tail, %{counter | pixel => counter[pixel]+1})
   end
 
-  defp clear([{_, 0}|rest]), do: clear(rest)
-  defp clear(list), do: list
-
   defp reduce(list, reduction) do
-    size = Enum.count(list)
-    do_reduce(list, mappint_init(), div((size * (reduction - 1)),reduction))
+    do_reduce(list, mappint_init(), div((256* (reduction - 1)),reduction))
   end
 
+  defp do_reduce([{_,0}|tail], mapping, 0), do: do_reduce(tail, mapping, 0)
+  defp do_reduce([{_,0}|tail], mapping, n), do: do_reduce(tail, mapping, n-1)
   defp do_reduce(list, mapping, 0), do: {list, mapping}
   defp do_reduce([{value, count}|tail], mapping, n) do
     {new_value, list} = squash({value, count}, tail)

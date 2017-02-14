@@ -2,11 +2,18 @@ defmodule Decay.LZW do
   def encode(pixels, reduction) do
     pixels
     |> do_encode(div((reduction - 1), 2))
+    |> norm
   end
 
   def decode(bin) do
-
+    bin
+    |> do_decode
   end
+
+  #private functios
+
+  defp norm(x) when is_binary(x), do: x
+  defp norm(x), do: norm(<<x::bitstring, 0::size(1)>>)
 
   defp mod(n) when n < 0, do: -n
   defp mod(n), do: n
@@ -17,9 +24,11 @@ defmodule Decay.LZW do
   end
 
   defp init_tree(n \\ 0) do
-    { n,
-      ( for i <- (0..255), do: {i, nil} )
-      |> Enum.into Map.new}
+    { n, %{}}
+  end
+
+  defp init_map() do
+    %{0 => []}
   end
 
   defp do_encode(pixels, margin, tree \\ init_tree, n \\ 1, bin \\ <<>>)
@@ -30,7 +39,6 @@ defmodule Decay.LZW do
     do_encode(rest, margin, tree, n + 1, <<bin::bitstring, enc::bitstring>>)
   end
 
-  #defp encode_single(pixels, margin, num, enc, inc, map, length)
   defp encode_single([], _, num, enc, inc,  _, length) do
     sz = bits(num-1)
     {length, <<enc::size(sz), inc::size(8)>>, [], nil}
@@ -45,7 +53,21 @@ defmodule Decay.LZW do
       |> branch(margin)
       |> Enum.map(&{encode_single(rest, margin, num, next_enc, &1, map[&1], length + 1), &1})
       |> Enum.max_by(&elem(elem(&1,0),0))
-    {length, enc, rest, {next_enc, %{map | subst => tree}}}
+    {length, enc, rest, {next_enc, Map.put(map, subst, tree)}}
+  end
+
+  defp do_decode(bin, num \\ 0, map \\ init_map, list \\ [])
+  defp do_decode(bin, _, _, list) when bit_size(bin) < 8 do
+    list
+    |> Enum.map(&Enum.reverse(&1))
+    |> Enum.reverse
+    |> List.flatten
+  end
+  defp do_decode(bin, num, map, list) do
+    sz = bits(num)
+    <<enc::size(sz), pixel::size(8), rest::bitstring>> = bin
+    word = [pixel | map[enc]]
+    do_decode(rest, num + 1, Map.put(map, num + 1, word), [ word | list ])
   end
 
   defp bits(x, n \\ 0)

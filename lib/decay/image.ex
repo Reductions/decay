@@ -1,5 +1,6 @@
 defmodule Decay.Image do
   alias Decay.Huffman
+  alias Decay.LZW
 
   def encode_image(pixels, reduction, format, space) do
     {e1, e2, e3} =
@@ -48,9 +49,9 @@ defmodule Decay.Image do
      Huffman.encode(c3, r3)}
   end
   defp encode_format({c1, c2, c3}, :lzw, {r1, r2, r3}) do
-    {Huffman.encode(c1, r1),
-     Huffman.encode(c2, r2),
-     Huffman.encode(c3, r3)}
+    {LZW.encode(c1, r1),
+     LZW.encode(c2, r2),
+     LZW.encode(c3, r3)}
   end
 
   defp split_bins(bin) do
@@ -69,6 +70,12 @@ defmodule Decay.Image do
      Huffman.decode(bin3)]
   end
 
+  defp decode_format({bin1, bin2, bin3}, 'L') do
+    [LZW.decode(bin1),
+     LZW.decode(bin2),
+     LZW.decode(bin3)]
+  end
+
   defp split_channels(pixels) do
     List.foldr(
       pixels,
@@ -81,8 +88,8 @@ defmodule Decay.Image do
   defp transform(pixels, :ycc) do
     Enum.map(pixels, fn({r, g, b}) ->
       { trunc(0.299*r + 0.587*g + 0.114*b),
-        trunc(128 - 0.16874*r - 0.33126*g + 0.5*b),
-        trunc(128 + 0.5*r - 0.41869*g - 0.08131*b)
+        trunc(128 - 0.168736*r - 0.331264*g + 0.5*b),
+        trunc(128 + 0.5*r - 0.418688*g - 0.081312*b)
       } end)
   end
 
