@@ -22,5 +22,8 @@ erl_crash.dump
 # Ignore executable
 /decay
 
+# Ignore shell scripts
+*.sh
+
 # Ignore images
 /reports

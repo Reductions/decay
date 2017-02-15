@@ -69,7 +69,7 @@ defmodule Decay do
   defp process(%{compress: true, lzw: true, rgb: true, reduction: <<c1, c2, c3>>, in: file_name}) do
     {width, height, pixels} = Png.get_image_info(file_name)
     pixels
-    |> Image.encode_image({( c1 - 48 )*2 + 1, ( c2 - 48 )*2 + 1, ( c3 - 48 )*2 + 1}, :lzw, :rgb)
+    |> Image.encode_image({255, 255, 255}, :lzw, :rgb)
     |> add_header(<<"xxDCYxxLZWxxRGBxx", width::size(16), height::size(16)>>)
     |> Image.write_image(String.replace_suffix(file_name, ".png", "-LZW-RGB-#{<<c1,c2,c3>>}.dcy"))
   end

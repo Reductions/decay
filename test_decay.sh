@@ -2,8 +2,16 @@ sh decay.sh --huffman 000
 sh decay.sh --lzw 000
 sh undecay.sh
 rm *000*
+sh decay.sh --huffman 000
+sh decay.sh --lzw 000
+sh undecay.sh
+rm *000*
+sh decay.sh --huffman 000
+sh decay.sh --lzw 000
+sh undecay.sh
+rm *000*
 
-for red in 000 111 222 333 444 555 666 777 888 999
+for red in 000 111 222 333
 do
     for enc in --huffman --lzw
     do
